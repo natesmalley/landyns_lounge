@@ -7,6 +7,7 @@ from .providers import ProviderClient
 import io
 from PIL import Image
 
+
 app = FastAPI(title="Meal Identification Service")
 
 # Initialize components
@@ -26,6 +27,10 @@ async def upload_image(file: UploadFile = File(...)):
         return JSONResponse(
             status_code=400, content={"error": "Meal could not be verified"}
         )
+    meal_type = classifier.classify(data)
+    similar = classifier.verify_with_similar_images(data)
+    if not similar:
+        return JSONResponse(status_code=400, content={"error": "Meal could not be verified"})
 
     recipe_list = recipes.find_recipes(meal_type)
     grocery_list = grocery_builder.build_grocery_list(recipe_list)
