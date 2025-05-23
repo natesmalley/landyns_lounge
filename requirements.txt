@@ -3,3 +3,4 @@ uvicorn
 pillow
 pytest
 httpx
+python-multipart==0.0.9
