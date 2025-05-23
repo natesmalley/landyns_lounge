@@ -23,4 +23,14 @@ implementations and the service should not be considered production ready.
    meal, example recipes and a grocery list. Use `/compare` to obtain dummy
    pricing data from different providers.
 
+## Updating pinned dependencies
+
+Package versions in `requirements.txt` are pinned to guarantee reproducible
+installs. When a dependency such as FastAPI, Uvicorn, Pillow or the test
+framework needs an update:
+
+1. Edit `requirements.txt` and change the version numbers as required.
+2. Re-install the dependencies with `pip install -r requirements.txt`.
+3. Run `pytest` to ensure the application still functions correctly.
+
 This project is licensed under the Apache 2.0 license.
