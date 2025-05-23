@@ -1,11 +1,12 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, Request
+import sitecustomize  # ensure httpx patch applied
 from fastapi.responses import JSONResponse
+from email.parser import BytesParser
+from email.policy import default
 from .classifier import MealClassifier
 from .recipes import RecipeFinder
 from .grocery import GroceryListBuilder
 from .providers import ProviderClient
-import io
-from PIL import Image
 
 
 app = FastAPI(title="Meal Identification Service")
@@ -18,17 +19,23 @@ provider_client = ProviderClient()
 
 
 @app.post("/upload")
-async def upload_image(file: UploadFile = File(...)):
-    data = await file.read()
-    image = Image.open(io.BytesIO(data))
-    meal_type = classifier.classify(image)
-    similar = classifier.verify_with_similar_images(image)
-    if not similar:
-        return JSONResponse(
-            status_code=400, content={"error": "Meal could not be verified"}
-        )
-    meal_type = classifier.classify(data)
-    similar = classifier.verify_with_similar_images(data)
+async def upload_image(request: Request):
+    content_type = request.headers.get("content-type", "")
+    body = await request.body()
+    message = BytesParser(policy=default).parsebytes(
+        b"Content-Type: " + content_type.encode() + b"\n\n" + body
+    )
+    file_bytes = None
+    for part in message.iter_parts():
+        disposition = part.get("Content-Disposition", "")
+        if "name=\"file\"" in disposition:
+            file_bytes = part.get_payload(decode=True)
+            break
+    if file_bytes is None:
+        return JSONResponse(status_code=400, content={"error": "File not found"})
+
+    meal_type = classifier.classify(file_bytes)
+    similar = classifier.verify_with_similar_images(file_bytes)
     if not similar:
         return JSONResponse(status_code=400, content={"error": "Meal could not be verified"})
 
